@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -589,40 +588,70 @@ function sendToSheet(ogpa, pct, lastGpa, totCr, totCP, failCnt, semGPAs, div) {
   try {
     const prog = document.querySelector('.chip.sel')?.textContent.trim() || '';
     const yearLabels = ['1st Year','2nd Year','3rd Year','4th Year (Final)'];
-    const payload = {
-      timestamp: new Date().toLocaleString('en-IN'),
-      name: document.getElementById('fName').value || '',
-      roll: document.getElementById('fRoll').value || '',
-      mobile: document.getElementById('fMobile').value || '',
-      email: document.getElementById('fEmail').value || '',
-      college: document.getElementById('fCollege').value || '',
-      university: document.getElementById('fUniv').value || '',
-      state: document.getElementById('fState').value || '',
+    // Build all field values
+    const fields = {
+      timestamp:    new Date().toLocaleString('en-IN'),
+      name:         document.getElementById('fName').value || '',
+      roll:         document.getElementById('fRoll').value || '',
+      mobile:       document.getElementById('fMobile').value || '',
+      email:        document.getElementById('fEmail').value || '',
+      college:      document.getElementById('fCollege').value || '',
+      university:   document.getElementById('fUniv').value || '',
+      state:        document.getElementById('fState').value || '',
       academicYear: document.getElementById('fYear').value || '',
-      programme: prog,
-      yearOfStudy: yearLabels[YEAR-1] || '',
-      sem1GPA: semGPAs[0] !== null && semGPAs[0] !== undefined ? semGPAs[0].toFixed(2) : '—',
-      sem2GPA: semGPAs[1] !== null && semGPAs[1] !== undefined ? semGPAs[1].toFixed(2) : '—',
-      sem3GPA: semGPAs[2] !== null && semGPAs[2] !== undefined ? semGPAs[2].toFixed(2) : '—',
-      sem4GPA: semGPAs[3] !== null && semGPAs[3] !== undefined ? semGPAs[3].toFixed(2) : '—',
-      sem5GPA: semGPAs[4] !== null && semGPAs[4] !== undefined ? semGPAs[4].toFixed(2) : '—',
-      sem6GPA: semGPAs[5] !== null && semGPAs[5] !== undefined ? semGPAs[5].toFixed(2) : '—',
-      sem7GPA: semGPAs[6] !== null && semGPAs[6] !== undefined ? semGPAs[6].toFixed(2) : '—',
-      sem8GPA: semGPAs[7] !== null && semGPAs[7] !== undefined ? semGPAs[7].toFixed(2) : '—',
-      ogpa: ogpa !== null ? ogpa.toFixed(2) : '—',
-      percentage: pct ? pct + '%' : '—',
-      credits: totCr ? totCr + '/' + (PROG ? PROG.totalCr : '') : '—',
-      creditPoints: totCr > 0 ? totCP.toFixed(2) : '—',
-      failedCourses: String(failCnt)
+      programme:    prog,
+      yearOfStudy:  yearLabels[YEAR-1] || '',
+      sem1GPA:  semGPAs[0]!=null ? semGPAs[0].toFixed(2) : '-',
+      sem2GPA:  semGPAs[1]!=null ? semGPAs[1].toFixed(2) : '-',
+      sem3GPA:  semGPAs[2]!=null ? semGPAs[2].toFixed(2) : '-',
+      sem4GPA:  semGPAs[3]!=null ? semGPAs[3].toFixed(2) : '-',
+      sem5GPA:  semGPAs[4]!=null ? semGPAs[4].toFixed(2) : '-',
+      sem6GPA:  semGPAs[5]!=null ? semGPAs[5].toFixed(2) : '-',
+      sem7GPA:  semGPAs[6]!=null ? semGPAs[6].toFixed(2) : '-',
+      sem8GPA:  semGPAs[7]!=null ? semGPAs[7].toFixed(2) : '-',
+      ogpa:         ogpa!=null ? ogpa.toFixed(2) : '-',
+      percentage:   pct ? pct+'%' : '-',
+      credits:      totCr ? totCr+'/'+(PROG?PROG.totalCr:'') : '-',
+      creditPoints: totCr>0 ? totCP.toFixed(2) : '-',
+      failedCourses:String(failCnt)
     };
-    // Send as text/plain to avoid CORS preflight
-    fetch(GAS_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(payload)
-    }).catch(()=>{});  // Silent — never show error to student
-  } catch(e) {}  // Silent — never block the calculator
+
+    // ── Method: hidden iframe form POST ──
+    // This is the most reliable way to POST to Google Apps Script
+    // from a static page without CORS issues.
+    const iframeId = 'gasFrame_'+Date.now();
+    const iframe = document.createElement('iframe');
+    iframe.name = iframeId;
+    iframe.id   = iframeId;
+    iframe.style.cssText = 'display:none;width:0;height:0;border:none;position:absolute;top:-9999px';
+    document.body.appendChild(iframe);
+
+    const form = document.createElement('form');
+    form.method  = 'POST';
+    form.action  = GAS_URL;
+    form.target  = iframeId;
+    form.enctype = 'application/x-www-form-urlencoded';
+    form.style.display = 'none';
+
+    // Add every field as a hidden input
+    Object.entries(fields).forEach(([k,v]) => {
+      const inp = document.createElement('input');
+      inp.type  = 'hidden';
+      inp.name  = k;
+      inp.value = v;
+      form.appendChild(inp);
+    });
+
+    document.body.appendChild(form);
+    form.submit();
+
+    // Clean up after 8 seconds
+    setTimeout(() => {
+      try { document.body.removeChild(form); } catch(e){}
+      try { document.body.removeChild(iframe); } catch(e){}
+    }, 8000);
+
+  } catch(e) {} // Silent — never block the calculator
 }
 
 // STATE

@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OGPA Calculator – ICAR 6th Dean's Committee</title>
+<title>OGPA Calculator – ICAR 6th Dean's Committee | v6.1</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -354,7 +355,7 @@ table.ct tfoot tr td{background:var(--fog);font-weight:700;border-top:2px solid 
   <div class="dev-info">
     <h4>Developed by Dr. Dinesh Govindaraj Kamalam</h4>
     <p>Assistant Professor (Environmental Science) &nbsp;|&nbsp; College of Agriculture, Central Agricultural University, Imphal, Manipur<br>
-    Developed in service and benefit of the student community &nbsp;|&nbsp; Version 6.0 — September 2026<br>
+    Developed in service and benefit of the student community &nbsp;|&nbsp; Version 6.1 — September 2026<br>
     Feedback: <a href="mailto:editorgkdinesh@gmail.com">editorgkdinesh@gmail.com</a></p>
   </div>
 </div>
@@ -580,6 +581,50 @@ const BOOKS=[
 {title:"Thinking in Systems",author:"Donella H. Meadows",theme:"Systems Science · Ecology · Agriculture Design",e:"⚙️",bg:"linear-gradient(135deg,#0f4c35,#166534)",desc:"A foundational primer on systems thinking — feedback loops, leverage points, and emergent behaviour. Directly applicable to understanding agricultural ecosystems, pest resistance, soil degradation, and food supply chain dynamics.",take:"Every farm is a system. Understanding its feedback loops is the first step to managing it well."},
 ];
 
+
+// ═══ GOOGLE SHEETS DATA COLLECTION ═══
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbz-aQRIxChfzKk8d5lf_vstdpJfd5kjyBufzdefgJs/exec';
+
+function sendToSheet(ogpa, pct, lastGpa, totCr, totCP, failCnt, semGPAs, div) {
+  try {
+    const prog = document.querySelector('.chip.sel')?.textContent.trim() || '';
+    const yearLabels = ['1st Year','2nd Year','3rd Year','4th Year (Final)'];
+    const payload = {
+      timestamp: new Date().toLocaleString('en-IN'),
+      name: document.getElementById('fName').value || '',
+      roll: document.getElementById('fRoll').value || '',
+      mobile: document.getElementById('fMobile').value || '',
+      email: document.getElementById('fEmail').value || '',
+      college: document.getElementById('fCollege').value || '',
+      university: document.getElementById('fUniv').value || '',
+      state: document.getElementById('fState').value || '',
+      academicYear: document.getElementById('fYear').value || '',
+      programme: prog,
+      yearOfStudy: yearLabels[YEAR-1] || '',
+      sem1GPA: semGPAs[0] !== null && semGPAs[0] !== undefined ? semGPAs[0].toFixed(2) : '—',
+      sem2GPA: semGPAs[1] !== null && semGPAs[1] !== undefined ? semGPAs[1].toFixed(2) : '—',
+      sem3GPA: semGPAs[2] !== null && semGPAs[2] !== undefined ? semGPAs[2].toFixed(2) : '—',
+      sem4GPA: semGPAs[3] !== null && semGPAs[3] !== undefined ? semGPAs[3].toFixed(2) : '—',
+      sem5GPA: semGPAs[4] !== null && semGPAs[4] !== undefined ? semGPAs[4].toFixed(2) : '—',
+      sem6GPA: semGPAs[5] !== null && semGPAs[5] !== undefined ? semGPAs[5].toFixed(2) : '—',
+      sem7GPA: semGPAs[6] !== null && semGPAs[6] !== undefined ? semGPAs[6].toFixed(2) : '—',
+      sem8GPA: semGPAs[7] !== null && semGPAs[7] !== undefined ? semGPAs[7].toFixed(2) : '—',
+      ogpa: ogpa !== null ? ogpa.toFixed(2) : '—',
+      percentage: pct ? pct + '%' : '—',
+      credits: totCr ? totCr + '/' + (PROG ? PROG.totalCr : '') : '—',
+      creditPoints: totCr > 0 ? totCP.toFixed(2) : '—',
+      failedCourses: String(failCnt)
+    };
+    // Send as text/plain to avoid CORS preflight
+    fetch(GAS_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    }).catch(()=>{});  // Silent — never show error to student
+  } catch(e) {}  // Silent — never block the calculator
+}
+
 // STATE
 let PROG=null,YEAR=0,shareText='';
 const IDX={q:0,f:0,s:0,b:0};
@@ -672,6 +717,7 @@ function calcAll(){
   document.getElementById('trtbl').innerHTML='<tr><td>Name</td><td><strong>'+nm+'</strong></td></tr><tr><td>Roll No.</td><td>'+document.getElementById('fRoll').value+'</td></tr><tr><td>Programme</td><td>'+prog+'</td></tr><tr><td>College</td><td>'+document.getElementById('fCollege').value+'</td></tr><tr><td>University</td><td>'+document.getElementById('fUniv').value+'</td></tr><tr><td>State</td><td>'+document.getElementById('fState').value+'</td></tr><tr><td>Academic Year</td><td>'+document.getElementById('fYear').value+'</td></tr><tr><td>Year of Study</td><td>'+(['1st Year','2nd Year','3rd Year','4th Year (Final)'][YEAR-1]||'—')+'</td></tr><tr><td>Credits Registered</td><td>'+totCr+' / '+PROG.totalCr+'</td></tr><tr><td>Credit Points Earned</td><td>'+(totCr>0?totCP.toFixed(2):'—')+'</td></tr><tr><td>OGPA</td><td><strong>'+(ogpa!==null?ogpa.toFixed(2):'—')+' / 10.00</strong></td></tr><tr><td>GPA (Latest Semester)</td><td>'+(lastGpa!==null?lastGpa.toFixed(2):'—')+'</td></tr><tr><td>Percentage</td><td>'+(pct?pct+'%':'—')+'</td></tr><tr><td>Division / Result</td><td><strong>'+div+'</strong></td></tr><tr><td>Failed Courses</td><td style="color:'+(failCnt>0?'var(--ruby)':'var(--leaf)')+'">'+failCnt+'</td></tr><tr><td>Calculated On</td><td>'+new Date().toLocaleString('en-IN')+'</td></tr>';
   shareText="📊 My OGPA — ICAR 6th Dean's Committee\n\n👤 "+nm+" | "+prog+"\n🏫 "+document.getElementById('fCollege').value+", "+document.getElementById('fUniv').value+"\n\n🎯 OGPA: "+(ogpa!==null?ogpa.toFixed(2):'—')+" / 10.00\n📈 Percentage: "+(pct?pct+'%':'—')+"\n🏆 Result: "+div+"\n📊 GPA (Latest Sem): "+(lastGpa!==null?lastGpa.toFixed(2):'—')+"\n❌ Failed: "+failCnt+" course(s)\n\nSemester GPA:\n"+semGPAs.map((g,i)=>"Sem "+(i+1)+": "+(g!==null?g.toFixed(2):'—')).join(' | ')+"\n\n⚠️ For personal self-assessment only.\nCalculator by Dr. Dinesh Govindaraj Kamalam, CAU Imphal.";
   document.getElementById('emailTo').value=document.getElementById('fEmail').value||'';
+  sendToSheet(ogpa, pct, lastGpa, totCr, totCP, failCnt, semGPAs, div);
   document.getElementById('resWrap').style.display='block';document.getElementById('resWrap').scrollIntoView({behavior:'smooth'});
 }
 function shareWA(){if(!shareText)return alert('Calculate your OGPA first!');window.open('https://wa.me/?text='+encodeURIComponent(shareText),'_blank');}
